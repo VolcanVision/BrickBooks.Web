@@ -39,14 +39,11 @@ class MyBuilderApp extends StatelessWidget {
   }
 
   Widget _checkAuthState() {
-
     final session = supabase.auth.currentSession;
 
-    if (session != null) {
-
+    if (session?.user != null) {
       return const SiteListScreen();
     } else {
-
       return const LoginScreen();
     }
   }
