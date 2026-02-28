@@ -16,6 +16,31 @@ import 'package:visionvolcan_site_app/services/site_service.dart';
 import 'package:visionvolcan_site_app/services/inventory_service.dart';
 import 'package:visionvolcan_site_app/services/cache_service.dart';
 
+DateTime _parseDate(String dateStr) {
+  try {
+    return DateFormat('dd MMM yyyy').parse(dateStr);
+  } catch (e) {
+    try {
+      final parts = dateStr.split(' ');
+      if (parts.length >= 2) {
+        final day = int.tryParse(parts[0]) ?? 1;
+        final monthStr = parts[1];
+        final year = parts.length > 2 ? int.tryParse(parts[2]) ?? DateTime.now().year : DateTime.now().year;
+
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final month = months.indexOf(monthStr) + 1;
+
+        if (month > 0) {
+          return DateTime(year, month, day);
+        }
+      }
+      return DateTime(2000);
+    } catch (e) {
+      return DateTime(2000);
+    }
+  }
+}
+
 
 class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> siteData;
@@ -1083,6 +1108,132 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _showEditPaymentDialog(Map<String, dynamic> contractor, Map<String, dynamic> payment, int paymentIndex) {
+    final TextEditingController editAmountController = TextEditingController();
+    final TextEditingController editDateController = TextEditingController();
+    final TextEditingController editModeController = TextEditingController();
+    
+    editAmountController.text = payment['amount']?.toString() ?? '';
+    editDateController.text = payment['date']?.toString() ?? '';
+    editModeController.text = payment['payment_mode']?.toString() ?? 'Cash';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Payment for ${contractor['name']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: editAmountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Amount',
+                  prefixIcon: Text('₹ '),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: editDateController,
+                readOnly: true,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Date',
+                  prefixIcon: Icon(Icons.calendar_today),
+                ),
+                onTap: () async {
+                  DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2022),
+                    lastDate: DateTime(2030),
+                  );
+                  if (picked != null) {
+                    editDateController.text = DateFormat("dd MMM yyyy").format(picked);
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: editModeController.text.isEmpty ? 'Cash' : editModeController.text,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Mode',
+                  prefixIcon: Icon(Icons.payment),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                  DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                  DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                  DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                ],
+                onChanged: (value) {
+                  editModeController.text = value ?? 'Cash';
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+              onPressed: () async {
+                final amountStr = editAmountController.text.trim();
+                if (amountStr.isEmpty) return;
+                final double editedAmount = double.tryParse(amountStr) ?? 0;
+
+                double totalContract = double.tryParse(contractor['total']?.toString() ?? '0') ?? 0.0;
+                
+                // Create updated installments list
+                List<dynamic> updatedHistory = List.from(contractor['installmentsData'] ?? []);
+                
+                // Update the specific payment at the given index
+                if (paymentIndex >= 0 && paymentIndex < updatedHistory.length) {
+                  updatedHistory[paymentIndex] = {
+                    'amount': editedAmount.toStringAsFixed(0),
+                    'date': editDateController.text,
+                    'status': 'paid',
+                    'payment_mode': editModeController.text.trim().isEmpty ? 'Cash' : editModeController.text.trim(),
+                  };
+                }
+
+                // Recalculate total paid from updated history
+                double recalculatedPaidTotal = updatedHistory.fold(0.0, (sum, item) =>
+                    sum + (double.tryParse(item['amount'].toString()) ?? 0.0));
+
+                double newPending = totalContract - recalculatedPaidTotal;
+
+                final updatedContractor = {
+                  'site_id': widget.siteData['id']!,
+                  'name': contractor['name'],
+                  'sector': contractor['sector'],
+                  'total': totalContract.toStringAsFixed(0),
+                  'paid': recalculatedPaidTotal.toStringAsFixed(0),
+                  'pending': newPending.toStringAsFixed(0),
+                  'installments': updatedHistory,
+                };
+
+                // Save to database
+                if (contractor['id'] != null) {
+                  await ExpenseService.instance.updateContractor(contractor['id'].toString(), updatedContractor);
+                }
+
+                _loadExpenseData();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Payment Updated Successfully!'), backgroundColor: Colors.blue),
+                );
+              },
+              child: const Text('Update Payment'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showDashboardInstallmentsDialog(Map<String, dynamic> item) {
     try {
       final allInstallmentsRaw = item['installmentsData'] ?? item['installments'];
@@ -1098,6 +1249,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       final paidInstallments = allInstallments.where((inst) => inst['status'] == 'paid').toList();
+      
+      // Sort by newest first (newer payments on top)
+      // For same-day payments, the one added later (higher index) comes first
+      paidInstallments.sort((a, b) {
+        DateTime dateA = _parseDate(a['date'] ?? '');
+        DateTime dateB = _parseDate(b['date'] ?? '');
+        
+        int dateComparison = dateB.compareTo(dateA); // Newest first
+        if (dateComparison != 0) {
+          return dateComparison;
+        }
+        
+        // If same date, sort by original position (newer additions first)
+        int indexA = allInstallments.indexOf(a);
+        int indexB = allInstallments.indexOf(b);
+        return indexB.compareTo(indexA); // Higher index (newer) first
+      });
 
       showDialog(
         context: context,
@@ -1154,21 +1322,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       const SizedBox(width: 4),
                                       Text(
                                         installment['date']?.toString() ?? '',
-                                        style: const TextStyle(fontSize: 13),
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                                       ),
                                     ],
                                   ),
-                                  if (installment['payment_mode'] != null)
-                                    Row(
-                                      children: [
-                                        Icon(Icons.payment, size: 12, color: Colors.grey.shade600),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          installment['payment_mode'].toString(),
-                                          style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.payment, size: 12, color: Colors.blue.shade600),
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(color: Colors.blue.shade200, width: 0.5),
                                         ),
-                                      ],
-                                    ),
+                                        child: Text(
+                                          installment['payment_mode']?.toString() ?? 'Cash',
+                                          style: TextStyle(
+                                            fontSize: 11, 
+                                            color: Colors.blue.shade700,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
