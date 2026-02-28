@@ -13,14 +13,11 @@ Future<void> main() async {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54eHJvYmZ0Z2trcXliYnZpbHViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNTk4ODMsImV4cCI6MjA3NzkzNTg4M30.B_DUDrllZTkUL6_y_XhkrW2QWmCfUelLPUHH7vc0Bno',
   );
 
-  // Initialize cache service for offline-first architecture (only on non-web platforms)
   if (!kIsWeb) {
     try {
       await CacheService.instance.init();
     } catch (e) {
       print('Cache service initialization failed: $e');
-      // Continue without cache if initialization fails
-      // Optionally disable cache usage globally
     }
   }
 
@@ -34,7 +31,7 @@ class MyBuilderApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: _checkAuthState(),  //check
+      home: _checkAuthState(),
     );
   }
 

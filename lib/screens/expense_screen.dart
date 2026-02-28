@@ -137,6 +137,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   void _showAddPaymentDialog(Map<String, dynamic> contractor) {
     final TextEditingController payAmountController = TextEditingController();
     final TextEditingController payDateController = TextEditingController();
+    final TextEditingController payModeController = TextEditingController();
     payDateController.text = DateFormat("dd MMM yyyy").format(DateTime.now());
 
     showDialog(
@@ -175,6 +176,23 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                   }
                 },
               ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: payModeController.text.isEmpty ? 'Cash' : payModeController.text,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Mode',
+                  prefixIcon: Icon(Icons.payment),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                  DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                  DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                  DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                ],
+                onChanged: (value) {
+                  payModeController.text = value ?? 'Cash';
+                },
+              ),
             ],
           ),
           actions: [
@@ -184,10 +202,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-        onPressed: () async {
-        final amountStr = payAmountController.text.trim();
-        if (amountStr.isEmpty) return;
-        final double newPayment = double.tryParse(amountStr) ?? 0;
+              onPressed: () async {
+                final amountStr = payAmountController.text.trim();
+                if (amountStr.isEmpty) return;
+                final double newPayment = double.tryParse(amountStr) ?? 0;
 
         double currentPending = (contractor['pendingRaw'] as num?)?.toDouble() ?? 0.0;
         if (newPayment > currentPending) {
@@ -205,7 +223,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         history.add({
         'amount': newPayment.toStringAsFixed(0),
         'date': payDateController.text,
-        'status': 'paid'
+        'status': 'paid',
+        'payment_mode': payModeController.text.trim().isEmpty ? 'Cash' : payModeController.text.trim(),
         });
 
         // 3. RECALCULATE Total Paid directly from history list (Discrepancy solve karne ke liye)
@@ -463,9 +482,57 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   // =======================================================
 
   Future<void> _refreshPurchases() async {
-    final purchases = await ExpenseService.instance.getMaterialPurchasesForSite(widget.siteData['id']!);
+    final purchases = await ExpenseService.instance.getMaterialPurchasesForSite(widget.siteData['id']!, forceRefresh: true);
     setState(() {
       _purchasedItems = purchases;
+    });
+  }
+
+  Future<void> _refreshContractors() async {
+    final contractorsData = await ExpenseService.instance.getContractorsForSite(widget.siteData['id']!, forceRefresh: true);
+    
+    contractorsData.sort((a, b) {
+      int idA = int.tryParse(a['id'].toString()) ?? 0;
+      int idB = int.tryParse(b['id'].toString()) ?? 0;
+      return idB.compareTo(idA); // Latest ID (Newest contractor) hamesha top par rahega
+    });
+
+    setState(() {
+      _contractors = contractorsData.map((contractor) {
+        final total = double.tryParse(contractor['total']?.toString() ?? '0') ?? 0;
+        final paid = double.tryParse(contractor['paid']?.toString() ?? '0') ?? 0;
+        final pending = double.tryParse(contractor['pending']?.toString() ?? '0') ?? 0;
+
+        final dynamic installs = contractor['installments'];
+        List<dynamic> installmentsList = [];
+        if (installs is String) {
+          // parsing logic...
+        } else if (installs is List) {
+          installmentsList = installs;
+        }
+
+        final installmentsCount = installmentsList.length;
+        final paidInstallments = installmentsList.where((inst) => inst['status'] == 'paid').length;
+
+        return {
+          'id': contractor['id']?.toString() ?? '',
+          'name': contractor['name']?.toString() ?? '',
+          'sector': contractor['sector']?.toString() ?? '',
+
+          'totalRaw': total,
+          'paidRaw': paid,
+          'pendingRaw': pending,
+
+          'total': '₹${_formatNumber(total)}',
+          'paid': '₹${_formatNumber(paid)}',
+          'pending': '₹${_formatNumber(pending)}',
+
+          'installmentsCount': installmentsCount.toString(),
+          'installmentsPaid': paidInstallments.toString(),
+          'installmentsData': installmentsList,
+          'nextPaymentDate': contractor['next_payment_date']?.toString() ?? 'Not set',
+        };
+      }).toList();
     });
   }
 
@@ -710,7 +777,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     }
 
     // Clean formatting for editing
-    _totalAmountController.text = contractor?['total']?.replaceAll('₹', '').replaceAll(',', '').replaceAll('L', '000').replaceAll('K', '00') ?? '';
+
 
     // We no longer need _paidAmountController here
 
@@ -809,55 +876,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         );
       },
     );
-  }
-
-  Future<void> _refreshContractors() async {
-    final contractorsData = await ExpenseService.instance.getContractorsForSite(widget.siteData['id']!);
-
-    contractorsData.sort((a, b) {
-      int idA = int.tryParse(a['id'].toString()) ?? 0;
-      int idB = int.tryParse(b['id'].toString()) ?? 0;
-      return idB.compareTo(idA); // Latest ID (Newest contractor) hamesha top par rahega
-    });
-
-
-    setState(() {
-      _contractors = contractorsData.map((contractor) {
-        final total = double.tryParse(contractor['total']?.toString() ?? '0') ?? 0;
-        final paid = double.tryParse(contractor['paid']?.toString() ?? '0') ?? 0;
-        final pending = double.tryParse(contractor['pending']?.toString() ?? '0') ?? 0;
-
-        final dynamic installs = contractor['installments'];
-        List<dynamic> installmentsList = [];
-        if (installs is String) {
-          // parsing logic...
-        } else if (installs is List) {
-          installmentsList = installs;
-        }
-
-        final installmentsCount = installmentsList.length;
-        final paidInstallments = installmentsList.where((inst) => inst['status'] == 'paid').length;
-
-        return {
-          'id': contractor['id']?.toString() ?? '',
-          'name': contractor['name']?.toString() ?? '',
-          'sector': contractor['sector']?.toString() ?? '',
-
-          'totalRaw': total,
-          'paidRaw': paid,
-          'pendingRaw': pending,
-
-          'total': '₹${_formatNumber(total)}',
-          'paid': '₹${_formatNumber(paid)}',
-          'pending': '₹${_formatNumber(pending)}',
-
-          'installmentsCount': installmentsCount.toString(),
-          'installmentsPaid': paidInstallments.toString(),
-          'installmentsData': installmentsList,
-          'nextPaymentDate': contractor['next_payment_date']?.toString() ?? 'Not set',
-        };
-      }).toList();
-    });
   }
 
   String _formatNumber(double amount) {
@@ -1133,9 +1151,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                                 'installments': updatedHistory,
                               });
 
-                              if (!mounted) return;
-
-                              // 5. UI Refresh aur Dialog close
+                              // Auto-refresh data after payment update
                               _refreshContractors();
                               Navigator.pop(context);
 

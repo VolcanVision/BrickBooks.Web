@@ -1145,14 +1145,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   fontSize: 16,
                                 ),
                               ),
-                              subtitle: Row(
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    installment['date']?.toString() ?? '',
-                                    style: const TextStyle(fontSize: 13),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        installment['date']?.toString() ?? '',
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                    ],
                                   ),
+                                  if (installment['payment_mode'] != null)
+                                    Row(
+                                      children: [
+                                        Icon(Icons.payment, size: 12, color: Colors.grey.shade600),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          installment['payment_mode'].toString(),
+                                          style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                                        ),
+                                      ],
+                                    ),
                                 ],
                               ),
                             ),

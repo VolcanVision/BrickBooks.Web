@@ -21,6 +21,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoggingIn = false;
 
   String _getLoginErrorMessage(Object error) {
+    print('Login error details: $error'); // Debug log
+    
     if (error is TimeoutException) {
       return 'Login timed out. Please check your internet connection and try again.';
     }
@@ -31,21 +33,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (error is AuthException) {
       final msg = (error.message).toLowerCase();
+      print('AuthException message: $msg'); // Debug log
+      
       if (msg.contains('invalid login credentials') || msg.contains('invalid') || msg.contains('credentials')) {
         return 'Wrong credentials. Please check email and password.';
+      }
+      if (msg.contains('cors') || msg.contains('cross-origin')) {
+        return 'CORS error. Please check Supabase web settings.';
+      }
+      if (msg.contains('network') || msg.contains('connection')) {
+        return 'Network error. Please check your connection and VPN.';
       }
       return error.message;
     }
 
     final raw = error.toString().toLowerCase();
+    print('Raw error string: $raw'); // Debug log
+    
     if (raw.contains('socketexception') || raw.contains('failed host lookup') || raw.contains('network')) {
       return 'You are offline. Please check your internet connection.';
     }
     if (raw.contains('invalid login credentials') || raw.contains('invalid') && raw.contains('credential')) {
       return 'Wrong credentials. Please check email and password.';
     }
+    if (raw.contains('cors') || raw.contains('cross-origin') || raw.contains('blocked')) {
+      return 'CORS error. Please add localhost to Supabase web settings.';
+    }
+    if (raw.contains('connection') || raw.contains('timeout') || raw.contains('unreachable')) {
+      return 'Cannot connect to Supabase. Check VPN and network.';
+    }
 
-    return 'Something went wrong. Please try again.';
+    return 'Login failed: ${error.toString().substring(0, error.toString().length > 50 ? 50 : error.toString().length)}...';
   }
 
 
@@ -137,9 +155,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 FocusScope.of(context).unfocus();
 
                                 try {
-                                  // Quick connectivity check (socket to Supabase)
-                                  await Socket.connect('nxxrobftgkkqybbvilub.supabase.co', 443).timeout(const Duration(seconds: 8));
-
                                   final authResponse = await supabase.auth
                                       .signInWithPassword(
                                         email: email,

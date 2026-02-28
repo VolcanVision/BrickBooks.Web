@@ -51,7 +51,7 @@ dependencies:
   
   # Charts (Optional)
   fl_chart: ^0.65.0
-  supabase_flutter: ^2.10.3
+  supabase_flutter: ^2.7.0
 
   share_plus: ^7.2.1
   # PDF & Excel (Optional for later)

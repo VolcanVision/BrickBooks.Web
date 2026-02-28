@@ -316,7 +316,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Future<void> _refreshInventory() async {
-    final purchases = await InventoryService.instance.getAllPurchases(widget.siteData['id']!);
+    final purchases = await InventoryService.instance.getAllPurchases(widget.siteData['id']!, forceRefresh: true);
     final consumed = await InventoryService.instance.getAllConsumed(widget.siteData['id']!);
 
     Map<String, int> purchasedMap = {};
