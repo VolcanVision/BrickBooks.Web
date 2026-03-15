@@ -10,7 +10,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: 'https://nxxrobftgkkqybbvilub.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54eHJvYmZ0Z2trcXliYnZpbHViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNTk4ODMsImV4cCI6MjA3NzkzNTg4M30.B_DUDrllZTkUL6_y_XhkrW2QWmCfUelLPUHH7vc0Bno',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54eHJvYmZ0Z2trcXliYnZpbHViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNTk4ODMsImV4cCI6MjA3NzkzNTg4M30.B_DUDrllZTkUL6_y_XhkrW2QWmCfUelLPUHH7vc0BnoeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54eHJvYmZ0Z2trcXliYnZpbHViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNTk4ODMsImV4cCI6MjA3NzkzNTg4M30.B_DUDrllZTkUL6_y_XhkrW2QWmCfUelLPUHH7vc0Bno',
   );
 
   if (!kIsWeb) {
