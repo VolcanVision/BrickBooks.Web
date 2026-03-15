@@ -48,3 +48,6 @@ class MyBuilderApp extends StatelessWidget {
 
 // easy access to our database
 final supabase = Supabase.instance.client;
+
+
+//build fix 
