@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:visionvolcan_site_app/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Simple logger for better error handling
 class AppLogger {
@@ -29,6 +29,7 @@ class InventoryService {
 
   Future<List<Map<String, dynamic>>> getAllPurchases(int siteId, {bool forceRefresh = false}) async {
     try {
+      final supabase = Supabase.instance.client;
       final response = await supabase
           .from('raw_material_purchases')
           .select()
@@ -43,6 +44,7 @@ class InventoryService {
   // This is used by InventoryScreen to calculate "Total Used".
   Future<List<Map<String, dynamic>>> getAllConsumed(int siteId, {bool forceRefresh = false}) async {
     try {
+      final supabase = Supabase.instance.client;
       final response = await supabase
           .from('material_consumed')
           .select()
@@ -57,6 +59,7 @@ class InventoryService {
   // This is called when you press the "+" button on the "Consumed" tab.
   Future<void> logMaterialUsage(Map<String, dynamic> item) async {
     try {
+      final supabase = Supabase.instance.client;
       await supabase.from('material_consumed').insert(item);
     } catch (e) {
       throw Exception('Failed to log material usage: $e');
@@ -66,6 +69,7 @@ class InventoryService {
   // NEW: Deletes a "usage" log from the 'material_consumed' table
   // This is called when you press the delete button on the "Consumed" tab.
   Future<void> deleteConsumedLog(String id) async {
+    final supabase = Supabase.instance.client;
     await supabase
         .from('material_consumed')
         .delete()
@@ -127,6 +131,7 @@ class InventoryService {
   //update function
   Future<void> updateConsumedLog(String id, Map<String, dynamic> data) async {
     try {
+      final supabase = Supabase.instance.client;
       await supabase
           .from('material_consumed')
           .update(data)

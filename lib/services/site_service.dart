@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:visionvolcan_site_app/main.dart';
 
 /// Manages all operations related to construction sites in the application
 class SiteService {
@@ -12,6 +11,7 @@ class SiteService {
   /// Retrieves a list of all construction sites from the database
   Future<List<Map<String, dynamic>>> getSites({bool forceRefresh = false}) async {
     try {
+      final supabase = Supabase.instance.client;
       final response = await supabase.from('sites').select();
       return List<Map<String, dynamic>>.from(response as List);
     } catch (e) {
@@ -30,6 +30,7 @@ class SiteService {
     dynamic newValue
   ) async {
     try {
+      final supabase = Supabase.instance.client;
       if (siteToUpdate['id'] != null) {
         await supabase
             .from('sites')
@@ -46,6 +47,7 @@ class SiteService {
   /// [newSite] A map containing the site details (name, location, etc.)
   Future<void> addSite(Map<String, dynamic> newSite) async {
     try {
+      final supabase = Supabase.instance.client;
       await supabase.from('sites').insert(newSite);
     } catch (e) {
       throw Exception('Failed to add site: $e');
@@ -57,6 +59,7 @@ class SiteService {
   /// [siteToDelete] The site map containing at least the 'id' field
   Future<void> deleteSite(Map<String, dynamic> siteToDelete) async {
     try {
+      final supabase = Supabase.instance.client;
       if (siteToDelete['id'] != null) {
         await supabase
             .from('sites')

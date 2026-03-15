@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:visionvolcan_site_app/screens/site_list_screen.dart';
-import 'package:visionvolcan_site_app/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gotrue/gotrue.dart';
 import 'dart:async';
 import 'dart:io';
@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 FocusScope.of(context).unfocus();
 
                                 try {
-                                  final authResponse = await supabase.auth
+                                  final authResponse = await Supabase.instance.client.auth
                                       .signInWithPassword(
                                         email: email,
                                         password: password,

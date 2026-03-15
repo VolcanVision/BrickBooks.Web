@@ -1,4 +1,4 @@
-import 'package:visionvolcan_site_app/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ExpenseService {
   ExpenseService._();
@@ -10,6 +10,7 @@ class ExpenseService {
   // NEW: Gets all purchases for a specific site
   Future<List<Map<String, dynamic>>> getMaterialPurchasesForSite(int siteId, {bool forceRefresh = false}) async {
     try {
+      final supabase = Supabase.instance.client;
       final response = await supabase
           .from('raw_material_purchases')
           .select()
@@ -22,6 +23,7 @@ class ExpenseService {
 
   // 2. Realtime Stream (Isse ADD karo)
   Stream<List<Map<String, dynamic>>> materialPurchasesStream(int siteId) {
+    final supabase = Supabase.instance.client;
     return supabase
         .from('raw_material_purchases')
         .stream(primaryKey: ['id']) // 'id' column primary key hona zaroori hai
@@ -31,6 +33,7 @@ class ExpenseService {
   // NEW: Adds a new purchase record
   Future<void> addMaterialPurchase(Map<String, dynamic> item) async {
     try {
+      final supabase = Supabase.instance.client;
       await supabase.from('raw_material_purchases').insert(item);
     } catch (e) {
       throw Exception('Failed to add material purchase: $e');
@@ -40,6 +43,7 @@ class ExpenseService {
   // NEW: Deletes a purchase record
   Future<void> updateMaterialPurchase(String id, Map<String, dynamic> updatedData) async {
     try {
+      final supabase = Supabase.instance.client;
       await supabase
           .from('raw_material_purchases') // Make sure this matches your Supabase table name
           .update(updatedData)
@@ -52,6 +56,7 @@ class ExpenseService {
   // --- DELETE METHOD ---
   Future<void> deleteMaterialPurchase(String id) async {
     try {
+      final supabase = Supabase.instance.client;
       await supabase
           .from('raw_material_purchases')
           .delete()
@@ -67,6 +72,7 @@ class ExpenseService {
 
   Future<List<Map<String, dynamic>>> getContractorsForSite(int siteId, {bool forceRefresh = false}) async {
     try {
+      final supabase = Supabase.instance.client;
       final response = await supabase
           .from('contractors')
           .select()
@@ -79,6 +85,7 @@ class ExpenseService {
 
   Future<void> addContractor(Map<String, dynamic> contractor) async {
     try {
+      final supabase = Supabase.instance.client;
       await supabase.from('contractors').insert(contractor);
     } catch (e) {
       throw Exception('Failed to add contractor: $e');
@@ -86,6 +93,7 @@ class ExpenseService {
   }
 
   Future<void> updateContractor(String id, Map<String, dynamic> updatedContractor) async {
+    final supabase = Supabase.instance.client;
     await supabase
         .from('contractors')
         .update(updatedContractor)
@@ -93,6 +101,7 @@ class ExpenseService {
   }
 
   Future<void> deleteContractor(String id) async {
+    final supabase = Supabase.instance.client;
     await supabase
         .from('contractors')
         .delete()
