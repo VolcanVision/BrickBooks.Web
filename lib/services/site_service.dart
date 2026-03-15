@@ -1,4 +1,5 @@
-import 'package:visionvolcan_site_app/services/cache_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:visionvolcan_site_app/main.dart';
 
 /// Manages all operations related to construction sites in the application
 class SiteService {
@@ -8,9 +9,14 @@ class SiteService {
   // Single instance of SiteService
   static final SiteService instance = SiteService._();
 
-  /// Retrieves a list of all construction sites from the cache or database
+  /// Retrieves a list of all construction sites from the database
   Future<List<Map<String, dynamic>>> getSites({bool forceRefresh = false}) async {
-    return await CacheService.instance.getSites(forceRefresh: forceRefresh);
+    try {
+      final response = await supabase.from('sites').select();
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      throw Exception('Failed to fetch sites: $e');
+    }
   }
 
   /// Updates a specific field of a site
@@ -23,21 +29,43 @@ class SiteService {
     String fieldKey, 
     dynamic newValue
   ) async {
-    await CacheService.instance.updateSiteField(siteToUpdate, fieldKey, newValue);
+    try {
+      if (siteToUpdate['id'] != null) {
+        await supabase
+            .from('sites')
+            .update({fieldKey: newValue})
+            .eq('id', siteToUpdate['id']);
+      }
+    } catch (e) {
+      throw Exception('Failed to update site: $e');
+    }
   }
 
-  /// Creates a new construction site in the database and cache
+  /// Creates a new construction site in the database
   /// 
   /// [newSite] A map containing the site details (name, location, etc.)
   Future<void> addSite(Map<String, dynamic> newSite) async {
-    await CacheService.instance.addSite(newSite);
+    try {
+      await supabase.from('sites').insert(newSite);
+    } catch (e) {
+      throw Exception('Failed to add site: $e');
+    }
   }
 
-  /// Permanently removes a site from the database and cache
+  /// Permanently removes a site from the database
   /// 
   /// [siteToDelete] The site map containing at least the 'id' field
   Future<void> deleteSite(Map<String, dynamic> siteToDelete) async {
-    await CacheService.instance.deleteSite(siteToDelete);
+    try {
+      if (siteToDelete['id'] != null) {
+        await supabase
+            .from('sites')
+            .delete()
+            .eq('id', siteToDelete['id']);
+      }
+    } catch (e) {
+      throw Exception('Failed to delete site: $e');
+    }
   }
 
   /// Marks a site as completed in the system

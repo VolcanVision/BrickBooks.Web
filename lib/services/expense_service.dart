@@ -1,5 +1,4 @@
 import 'package:visionvolcan_site_app/main.dart';
-import 'package:visionvolcan_site_app/services/cache_service.dart';
 
 class ExpenseService {
   ExpenseService._();
@@ -10,7 +9,15 @@ class ExpenseService {
 
   // NEW: Gets all purchases for a specific site
   Future<List<Map<String, dynamic>>> getMaterialPurchasesForSite(int siteId, {bool forceRefresh = false}) async {
-    return await CacheService.instance.getMaterialPurchasesForSite(siteId, forceRefresh: forceRefresh);
+    try {
+      final response = await supabase
+          .from('raw_material_purchases')
+          .select()
+          .eq('site_id', siteId);
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      throw Exception('Failed to fetch material purchases: $e');
+    }
   }
 
   // 2. Realtime Stream (Isse ADD karo)
@@ -23,7 +30,11 @@ class ExpenseService {
 
   // NEW: Adds a new purchase record
   Future<void> addMaterialPurchase(Map<String, dynamic> item) async {
-    await CacheService.instance.addMaterialPurchase(item);
+    try {
+      await supabase.from('raw_material_purchases').insert(item);
+    } catch (e) {
+      throw Exception('Failed to add material purchase: $e');
+    }
   }
 
   // NEW: Deletes a purchase record
@@ -55,11 +66,23 @@ class ExpenseService {
   // This logic is correct and remains unchanged.
 
   Future<List<Map<String, dynamic>>> getContractorsForSite(int siteId, {bool forceRefresh = false}) async {
-    return await CacheService.instance.getContractorsForSite(siteId, forceRefresh: forceRefresh);
+    try {
+      final response = await supabase
+          .from('contractors')
+          .select()
+          .eq('site_id', siteId);
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      throw Exception('Failed to fetch contractors: $e');
+    }
   }
 
   Future<void> addContractor(Map<String, dynamic> contractor) async {
-    await CacheService.instance.addContractor(contractor);
+    try {
+      await supabase.from('contractors').insert(contractor);
+    } catch (e) {
+      throw Exception('Failed to add contractor: $e');
+    }
   }
 
   Future<void> updateContractor(String id, Map<String, dynamic> updatedContractor) async {

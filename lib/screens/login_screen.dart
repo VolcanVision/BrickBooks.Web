@@ -23,9 +23,9 @@ class _LoginScreenState extends State<LoginScreen> {
   String _getLoginErrorMessage(Object error) {
     print('Login error details: $error'); // Debug log
     
-    if (error is TimeoutException) {
-      return 'Login timed out. Please check your internet connection and try again.';
-    }
+    //if (error is TimeoutException) {
+    //  return 'Login timed out. Please check your internet connection and try again.';
+    //}
 
     if (error is SocketException) {
       return 'You are offline. Please check your internet connection.';

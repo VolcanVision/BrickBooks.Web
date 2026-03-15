@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:visionvolcan_site_app/main.dart';
-import 'package:visionvolcan_site_app/services/cache_service.dart';
 
 /// Simple logger for better error handling
 class AppLogger {
@@ -28,21 +27,40 @@ class InventoryService {
   InventoryService._();
   static final InventoryService instance = InventoryService._();
 
-
   Future<List<Map<String, dynamic>>> getAllPurchases(int siteId, {bool forceRefresh = false}) async {
-    return await CacheService.instance.getMaterialPurchasesForSite(siteId, forceRefresh: forceRefresh);
+    try {
+      final response = await supabase
+          .from('raw_material_purchases')
+          .select()
+          .eq('site_id', siteId);
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      throw Exception('Failed to fetch purchases: $e');
+    }
   }
 
   // NEW: Gets all consumed logs from the 'material_consumed' table
   // This is used by InventoryScreen to calculate "Total Used".
   Future<List<Map<String, dynamic>>> getAllConsumed(int siteId, {bool forceRefresh = false}) async {
-    return await CacheService.instance.getMaterialConsumedForSite(siteId, forceRefresh: forceRefresh);
+    try {
+      final response = await supabase
+          .from('material_consumed')
+          .select()
+          .eq('site_id', siteId);
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      throw Exception('Failed to fetch consumed items: $e');
+    }
   }
 
   // NEW: Adds a new "usage" log to the 'material_consumed' table
   // This is called when you press the "+" button on the "Consumed" tab.
   Future<void> logMaterialUsage(Map<String, dynamic> item) async {
-    await CacheService.instance.logMaterialUsage(item);
+    try {
+      await supabase.from('material_consumed').insert(item);
+    } catch (e) {
+      throw Exception('Failed to log material usage: $e');
+    }
   }
 
   // NEW: Deletes a "usage" log from the 'material_consumed' table

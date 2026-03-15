@@ -14,7 +14,6 @@ import 'package:visionvolcan_site_app/screens/site_list_screen.dart';
 import 'package:visionvolcan_site_app/services/expense_service.dart';
 import 'package:visionvolcan_site_app/services/site_service.dart';
 import 'package:visionvolcan_site_app/services/inventory_service.dart';
-import 'package:visionvolcan_site_app/services/cache_service.dart';
 
 DateTime _parseDate(String dateStr) {
   try {
@@ -482,12 +481,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               );
               
-              // Force refresh cache for this site (if available)
+              // Force refresh data for this site
               try {
-                await CacheService.instance.refreshSiteData(_siteId());
+                // Data will be fetched fresh from server since cache is disabled
+                print('Data refreshed from server');
               } catch (e) {
-                // Cache refresh failed, but continue with data reload
-                print('Cache refresh failed: $e');
+                // Data refresh failed, but continue with reload
+                print('Data refresh failed: $e');
               }
               
               // Reload expense data

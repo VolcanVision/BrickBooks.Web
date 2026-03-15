@@ -262,6 +262,7 @@ class CacheService {
     try {
       final user = supabase.auth.currentUser;
       AppLogger.log('Current user: ${user?.email}');
+      AppLogger.log('Current schema: ${supabase.schema}');
     } catch (e) {
       AppLogger.error('Supabase auth check failed', error: e);
     }
